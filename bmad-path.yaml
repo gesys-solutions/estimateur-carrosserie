@@ -1,0 +1,71 @@
+# BMAD Path Tracker - EstimPro (Estimateur Carrosserie)
+# Version: 1.0
+# Last Updated: 2026-02-04
+
+project:
+  name: EstimPro
+  description: Outil de gestion pour estimateurs en carrosserie
+  created: 2026-02-04
+  stakeholder: Yves
+
+steps:
+  1-problem:
+    status: completed
+    agent: Mary
+    artifact: estimateur-carrosserie/docs/problem-statement.md
+    notes: Features extraites des 16 responsabilités de l'estimateur
+    
+  2-brainstorm:
+    status: completed
+    agent: Mary
+    artifact: estimateur-carrosserie/docs/brainstorm.md
+    drive_link: https://drive.google.com/file/d/1X34pejU7QoM34g_01bYMSFksaFKelN75/view
+    notes: |
+      - 3 Personas: Marc (junior), Sylvie (senior), Pierre (manager)
+      - 5 User Journeys: accueil, devis, négociation, relance, livraison
+      - 8 P0 features, 7 P1, 6 P2
+      - 60 idées générées via techniques créatives
+      
+  3-prd:
+    status: completed
+    agent: John
+    artifact: estimateur-carrosserie/docs/prd.md
+    drive_link: https://drive.google.com/file/d/1i7pyz4KfdfafrP0x5JjLJX4hVTc8cbuk/view
+    completed_at: 2026-02-04T01:02:00Z
+    notes: |
+      - PRD complet avec 8 features P0, 7 P1, 6 P2
+      - Personas, journeys, specs détaillées
+      - Exigences non-fonctionnelles définies
+      - Timeline préliminaire: 10-12 semaines
+      
+  4-solution:
+    status: pending
+    agent: Winston
+    artifact: null
+    notes: Architecture technique, data model, API spec
+    
+  5-epics:
+    status: pending
+    agent: John
+    artifact: null
+    notes: Découpage en Epics & Stories
+    
+  6-implementation:
+    status: pending
+    agent: Dev
+    artifact: null
+    notes: Sprints de développement
+
+constraints:
+  dev_local: true
+  deployment: Azure Container Apps
+  multi_users: true
+  internet_accessible: true
+  
+stack:
+  frontend: Next.js 14+
+  backend: Python FastAPI or Next.js API Routes
+  database: PostgreSQL (Azure)
+  auth: Azure AD B2C or NextAuth.js
+  hosting: Azure Container Apps
+  storage: Azure Blob Storage
