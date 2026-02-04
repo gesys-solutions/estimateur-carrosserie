@@ -28,7 +28,7 @@ export const createUserSchema = z.object({
     .optional(),
   firstName: z.string().min(1, "Le prénom est requis"),
   lastName: z.string().min(1, "Le nom est requis"),
-  role: z.enum(["ADMIN", "MANAGER", "ESTIMATOR"], {
+  role: z.enum(["ADMIN", "MANAGER", "ESTIMATEUR"], {
     message: "Rôle invalide",
   }),
 });
@@ -43,7 +43,7 @@ export const updateUserSchema = z.object({
   email: z.string().email("Format de courriel invalide").optional(),
   firstName: z.string().min(1, "Le prénom est requis").optional(),
   lastName: z.string().min(1, "Le nom est requis").optional(),
-  role: z.enum(["ADMIN", "MANAGER", "ESTIMATOR"]).optional(),
+  role: z.enum(["ADMIN", "MANAGER", "ESTIMATEUR"]).optional(),
   isActive: z.boolean().optional(),
 });
 

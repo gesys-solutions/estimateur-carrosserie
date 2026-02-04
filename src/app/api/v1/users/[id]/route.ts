@@ -244,11 +244,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (action === "reset-password") {
       const newPassword = generateTemporaryPassword();
-      const passwordHash = await hashPassword(newPassword);
+      const hashedPassword = await hashPassword(newPassword);
 
       await prisma.user.update({
         where: { id },
-        data: { passwordHash },
+        data: { password: hashedPassword },
       });
 
       await prisma.auditLog.create({

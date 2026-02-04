@@ -26,7 +26,7 @@ import { User, Lock, Save, Eye, EyeOff, CheckCircle } from "lucide-react";
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrateur",
   MANAGER: "Gestionnaire",
-  ESTIMATOR: "Estimateur",
+  ESTIMATEUR: "Estimateur",
 };
 
 export default function ProfilePage() {

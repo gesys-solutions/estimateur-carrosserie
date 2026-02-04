@@ -45,13 +45,13 @@ interface User {
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrateur",
   MANAGER: "Gestionnaire",
-  ESTIMATOR: "Estimateur",
+  ESTIMATEUR: "Estimateur",
 };
 
 const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Administrateur" },
   { value: "MANAGER", label: "Gestionnaire" },
-  { value: "ESTIMATOR", label: "Estimateur" },
+  { value: "ESTIMATEUR", label: "Estimateur" },
 ];
 
 export default function UsersPage() {
@@ -342,7 +342,7 @@ function CreateUserModal({
   } = useForm<CreateUserInput>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
-      role: "ESTIMATOR",
+      role: "ESTIMATEUR",
     },
   });
 
@@ -495,7 +495,7 @@ function EditUserModal({
     defaultValues: {
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role as "ADMIN" | "MANAGER" | "ESTIMATOR",
+      role: user.role as "ADMIN" | "MANAGER" | "ESTIMATEUR",
     },
   });
 

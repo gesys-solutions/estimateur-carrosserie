@@ -55,6 +55,6 @@ export function useCurrentUser(): UseCurrentUserResult {
     isAuthenticated,
     isAdmin: user?.role === "ADMIN",
     isManager: user?.role === "MANAGER",
-    isEstimator: user?.role === "ESTIMATOR",
+    isEstimator: user?.role === "ESTIMATEUR",
   };
 }

@@ -73,7 +73,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "reports:read",
     "reports:export",
   ],
-  ESTIMATOR: [
+  ESTIMATEUR: [
     // Own estimates only
     "estimates:read:own",
     "estimates:write:own",

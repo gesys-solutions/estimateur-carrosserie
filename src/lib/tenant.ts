@@ -128,6 +128,7 @@ export async function requireTenantAccess(
           userId: context.userId,
           action: "ACCESS_DENIED",
           entityType: resourceType,
+          entityId: resourceTenantId,
           details: JSON.stringify({
             attemptedTenantId: resourceTenantId,
             reason: "Cross-tenant access attempt",

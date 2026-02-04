@@ -74,7 +74,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Verify password
-        const isValidPassword = await compare(password, user.passwordHash);
+        const isValidPassword = await compare(password, user.password);
         if (!isValidPassword) {
           throw new Error("Identifiants invalides");
         }

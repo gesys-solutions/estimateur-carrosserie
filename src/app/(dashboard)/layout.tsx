@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+// Force dynamic rendering for all dashboard routes (auth required)
+export const dynamic = 'force-dynamic';
+
 interface NavItem {
   label: string;
   href: string;

@@ -46,11 +46,11 @@ interface User {
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrateur",
   MANAGER: "Gestionnaire",
-  ESTIMATOR: "Estimateur",
+  ESTIMATEUR: "Estimateur",
 };
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: "ESTIMATOR", label: "Estimateur" },
+  { value: "ESTIMATEUR", label: "Estimateur" },
   { value: "MANAGER", label: "Gestionnaire" },
   { value: "ADMIN", label: "Administrateur" },
 ];
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
       password: "",
       firstName: "",
       lastName: "",
-      role: "ESTIMATOR",
+      role: "ESTIMATEUR",
     },
   });
 

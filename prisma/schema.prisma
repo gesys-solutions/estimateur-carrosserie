@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ===== TENANTS & AUTH =====
@@ -26,15 +27,18 @@ model Tenant {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      Role     @default(ESTIMATEUR)
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  email       String    @unique
+  firstName   String
+  lastName    String
+  password    String
+  role        Role      @default(ESTIMATEUR)
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   devis    Devis[]
   relances Relance[]
@@ -108,11 +112,11 @@ model Devis {
   estimateurId String
   estimateur   User        @relation(fields: [estimateurId], references: [id], onDelete: Restrict)
   status       DevisStatus @default(BROUILLON)
-  totalHT      Decimal     @default(0) @db.Decimal(10, 2)
-  totalTPS     Decimal     @default(0) @db.Decimal(10, 2)
-  totalTVQ     Decimal     @default(0) @db.Decimal(10, 2)
-  totalTTC     Decimal     @default(0) @db.Decimal(10, 2)
-  notes        String?     @db.Text
+  totalHT      Decimal     @default(0) 
+  totalTPS     Decimal     @default(0) 
+  totalTVQ     Decimal     @default(0) 
+  totalTTC     Decimal     @default(0) 
+  notes        String?     
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -143,9 +147,9 @@ model DevisItem {
   devis       Devis         @relation(fields: [devisId], references: [id], onDelete: Cascade)
   description String
   type        DevisItemType
-  quantity    Decimal       @db.Decimal(10, 2)
-  unitPrice   Decimal       @db.Decimal(10, 2)
-  total       Decimal       @db.Decimal(10, 2)
+  quantity    Decimal       
+  unitPrice   Decimal       
+  total       Decimal       
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -168,7 +172,7 @@ model Assurance {
   contactName  String?
   contactEmail String?
   contactPhone String?
-  notes        String?  @db.Text
+  notes        String?  
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
@@ -188,9 +192,9 @@ model Reclamation {
   assuranceId String
   assurance   Assurance          @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
   claimNumber String?
-  agreedPrice Decimal?           @db.Decimal(10, 2)
+  agreedPrice Decimal?           
   status      ReclamationStatus  @default(SOUMISE)
-  notes       String?            @db.Text
+  notes       String?            
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
@@ -214,7 +218,7 @@ model Relance {
   devisId      String
   devis        Devis       @relation(fields: [devisId], references: [id], onDelete: Cascade)
   type         RelanceType
-  notes        String      @db.Text
+  notes        String      
   outcome      String?
   nextFollowUp DateTime?
   createdById  String
@@ -232,4 +236,23 @@ enum RelanceType {
   EMAIL
   SMS
   VISITE
+}
+
+// ===== AUDIT =====
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  details    String?  
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

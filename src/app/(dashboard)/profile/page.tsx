@@ -26,7 +26,7 @@ import {
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrateur",
   MANAGER: "Gestionnaire",
-  ESTIMATOR: "Estimateur",
+  ESTIMATEUR: "Estimateur",
 };
 
 export default function ProfilePage() {

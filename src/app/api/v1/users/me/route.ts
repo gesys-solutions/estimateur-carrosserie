@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Get current user with password
     const user = await prisma.user.findUnique({
       where: { id: tenant.userId },
-      select: { passwordHash: true },
+      select: { password: true },
     });
 
     if (!user) {
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify current password
-    const isValidPassword = await verifyPassword(currentPassword, user.passwordHash);
+    const isValidPassword = await verifyPassword(currentPassword, user.password);
     if (!isValidPassword) {
       return NextResponse.json(
         { error: "Mot de passe actuel incorrect" },
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     const newPasswordHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: tenant.userId },
-      data: { passwordHash: newPasswordHash },
+      data: { password: newPasswordHash },
     });
 
     // Audit log

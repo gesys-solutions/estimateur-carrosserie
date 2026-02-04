@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     // Generate password if not provided
     const userPassword = password || generateTemporaryPassword();
-    const passwordHash = await hashPassword(userPassword);
+    const hashedPassword = await hashPassword(userPassword);
 
     // Create user
     const newUser = await prisma.user.create({
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName,
         role,
-        passwordHash,
+        password: hashedPassword,
         isActive: true,
       },
       select: {

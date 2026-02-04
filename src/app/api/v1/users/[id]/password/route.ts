@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Verify current password (only for self-change)
     if (isSelf) {
-      const isValidPassword = await compare(currentPassword, user.passwordHash);
+      const isValidPassword = await compare(currentPassword, user.password);
       if (!isValidPassword) {
         return NextResponse.json(
           { error: "Mot de passe actuel incorrect" },
@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const newPasswordHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id },
-      data: { passwordHash: newPasswordHash },
+      data: { password: newPasswordHash },
     });
 
     // Audit log
