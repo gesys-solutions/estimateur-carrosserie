@@ -10,8 +10,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { 
-  AlertDialog,
+import { AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -22,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DevisStatusBadge, DevisStatusDropdown, DevisItemEditor, DevisTotals } from "@/components/devis";
+import { DevisInsuranceSection } from "@/components/assurances";
 import { formatDate, formatDateTime, formatPhone } from "@/lib/utils";
 import { useDevis, useDeleteDevis } from "@/hooks/devis";
 import { toast } from "sonner";
@@ -280,28 +280,11 @@ export default function DevisDetailPage({ params }: PageProps) {
         </Card>
       )}
 
-      {/* Reclamation Info (if exists) */}
-      {devis.reclamation && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Réclamation Assurance</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="font-medium">{devis.reclamation.assurance.name}</p>
-            {devis.reclamation.claimNumber && (
-              <p className="font-mono text-zinc-600">
-                N° réclamation: {devis.reclamation.claimNumber}
-              </p>
-            )}
-            <p className="text-zinc-500">Statut: {devis.reclamation.status}</p>
-            {devis.reclamation.agreedPrice && (
-              <p className="font-medium text-green-600">
-                Prix convenu: {devis.reclamation.agreedPrice.toFixed(2)} $
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Insurance Section */}
+      <DevisInsuranceSection
+        devisId={id}
+        devisTotalTTC={devis.totals.total}
+      />
 
       {/* Recent Follow-ups */}
       {devis.relances.length > 0 && (
