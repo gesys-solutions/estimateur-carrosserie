@@ -74,8 +74,8 @@ export function isValidTransition(from: DevisStatusType, to: DevisStatusType): b
 export const devisItemSchema = z.object({
   description: z.string().min(1, 'Description requise').max(500),
   type: z.enum(['PIECE', 'MAIN_OEUVRE', 'PEINTURE', 'AUTRE']),
-  quantity: z.coerce.number().min(0.01, 'Quantité doit être positive'),
-  unitPrice: z.coerce.number().min(0, 'Prix doit être positif ou zéro'),
+  quantity: z.number().min(0.01, 'Quantité doit être positive'),
+  unitPrice: z.number().min(0, 'Prix doit être positif ou zéro'),
 });
 
 export type DevisItemFormData = z.infer<typeof devisItemSchema>;
