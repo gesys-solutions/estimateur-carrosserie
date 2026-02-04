@@ -4,4 +4,39 @@
 
 export { useCurrentUser, type CurrentUser } from "./use-current-user";
 export { useDebounce } from "./use-debounce";
-export * from "./clients";
+
+// Re-export with explicit names to avoid conflicts
+export {
+  useClients,
+  useClient,
+  useCreateClient,
+  useUpdateClient,
+  useDeleteClient,
+  useVehicles,
+  useCreateVehicle,
+  useUpdateVehicle,
+  useDeleteVehicle,
+  clientKeys,
+  vehicleKeys,
+  type ClientListItem,
+  type ClientDetail,
+  type VehicleListItem,
+  type ClientDevisListItem,
+} from "./clients";
+
+export {
+  useDevisList,
+  useDevis,
+  useCreateDevis,
+  useUpdateDevis,
+  useDeleteDevis,
+  useAddDevisItem,
+  useUpdateDevisItem,
+  useDeleteDevisItem,
+  useSendDevis,
+  useChangeDevisStatus,
+  devisKeys,
+  type DevisListItem,
+  type DevisDetail,
+  type DevisItem,
+} from "./devis";

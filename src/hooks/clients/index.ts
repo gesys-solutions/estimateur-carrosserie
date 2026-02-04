@@ -25,7 +25,7 @@ export interface ClientDetail extends Omit<ClientListItem, 'vehicleCount'> {
   postalCode: string | null;
   updatedAt: string;
   vehicles: VehicleListItem[];
-  devis: DevisListItem[];
+  devis: ClientDevisListItem[];
   stats: {
     total: number;
     totalAmount: number;
@@ -50,7 +50,7 @@ export interface VehicleListItem {
   createdAt: string;
 }
 
-export interface DevisListItem {
+export interface ClientDevisListItem {
   id: string;
   number: string;
   status: string;
