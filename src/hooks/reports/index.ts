@@ -6,17 +6,21 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { LostReasonType } from "@/lib/validations/relance";
+import { LostReasonLabels } from "@/lib/validations/relance";
 
 // Types
 export interface LostReportSummary {
-  count: number;
+  totalLost: number;
   totalAmount: number;
+  averageAmount: number;
 }
 
 export interface LostReasonBreakdown {
   reason: LostReasonType;
+  label: string;
   count: number;
-  amount: number;
+  totalAmount: number;
+  percentage: number;
 }
 
 export interface LostDevisItem {
@@ -49,7 +53,7 @@ export interface LostReportData {
     label: string;
   };
   summary: LostReportSummary;
-  byReason: LostReasonBreakdown[];
+  reasonBreakdown: LostReasonBreakdown[];
   devis: LostDevisItem[];
 }
 
@@ -65,8 +69,27 @@ export const reportKeys = {
   lost: (params: LostReportParams) => [...reportKeys.all, "lost", params] as const,
 };
 
+// API response type
+interface ApiLostReportResponse {
+  period: {
+    start: string;
+    end: string;
+    label: string;
+  };
+  summary: {
+    count: number;
+    totalAmount: number;
+  };
+  byReason: Array<{
+    reason: LostReasonType;
+    count: number;
+    amount: number;
+  }>;
+  devis: LostDevisItem[];
+}
+
 // API function
-async function fetchLostReport(params: LostReportParams = {}): Promise<LostReportData> {
+async function fetchLostReport(params: LostReportParams = {}): Promise<{ data: LostReportData }> {
   const searchParams = new URLSearchParams();
   if (params.period) searchParams.set("period", params.period);
   if (params.startDate) searchParams.set("startDate", params.startDate);
@@ -77,7 +100,31 @@ async function fetchLostReport(params: LostReportParams = {}): Promise<LostRepor
     const error = await response.json();
     throw new Error(error.error || "Erreur lors de la récupération du rapport");
   }
-  return response.json();
+  
+  const apiData: ApiLostReportResponse = await response.json();
+  
+  // Transform to expected format
+  const totalCount = apiData.summary.count;
+  const reasonBreakdown: LostReasonBreakdown[] = apiData.byReason.map((item) => ({
+    reason: item.reason,
+    label: LostReasonLabels[item.reason] || item.reason,
+    count: item.count,
+    totalAmount: item.amount,
+    percentage: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0,
+  }));
+
+  return {
+    data: {
+      period: apiData.period,
+      summary: {
+        totalLost: apiData.summary.count,
+        totalAmount: apiData.summary.totalAmount,
+        averageAmount: totalCount > 0 ? Math.round(apiData.summary.totalAmount / totalCount) : 0,
+      },
+      reasonBreakdown,
+      devis: apiData.devis,
+    },
+  };
 }
 
 // Hook

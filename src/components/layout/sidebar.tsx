@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useLeadsCount } from "@/hooks/relances";
+import { useLeadsCount } from "@/hooks/leads";
 
 import type { Route } from "next";
 

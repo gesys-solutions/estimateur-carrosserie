@@ -60,13 +60,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build tenant where clause
-    const tenantWhere = typeof tenant.where === 'function' ? tenant.where() : { tenantId: tenant.tenantId };
-
     // Fetch lost devis
     const lostDevis = await prisma.devis.findMany({
       where: {
-        estimateur: tenantWhere,
+        estimateur: { tenantId: tenant.tenantId },
         status: "REFUSE",
         lostAt: {
           gte: startDate,

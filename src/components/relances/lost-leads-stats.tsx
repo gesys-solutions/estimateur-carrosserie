@@ -16,14 +16,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const reasonLabels: Record<string, string> = {
-  PRICE: "Prix",
-  DELAY: "Délais",
-  COMPETITOR: "Concurrent",
-  NO_RESPONSE: "Pas de réponse",
-  OTHER: "Autre",
-};
-
 const reasonColors: Record<string, string> = {
   PRICE: "bg-red-500",
   DELAY: "bg-orange-500",
@@ -33,7 +25,7 @@ const reasonColors: Record<string, string> = {
 };
 
 interface LostLeadsStatsProps {
-  period?: string;
+  period?: "month" | "quarter" | "year";
 }
 
 export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
@@ -47,7 +39,7 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
     );
   }
 
-  if (error || !data) {
+  if (error || !data?.data) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-red-500">
@@ -58,7 +50,7 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
     );
   }
 
-  const { summary, byReason } = data;
+  const { summary, reasonBreakdown } = data.data;
 
   return (
     <div className="space-y-6">
@@ -72,9 +64,9 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.count}</div>
+            <div className="text-2xl font-bold">{summary.totalLost}</div>
             <p className="text-xs text-zinc-500 mt-1">
-              ce {period === "month" ? "mois" : period === "quarter" ? "trimestre" : "mois"}
+              ce {period === "month" ? "mois" : period === "quarter" ? "trimestre" : "année"}
             </p>
           </CardContent>
         </Card>
@@ -105,11 +97,11 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary.count > 0
+              {summary.totalLost > 0
                 ? new Intl.NumberFormat("fr-CA", {
                     style: "currency",
                     currency: "CAD",
-                  }).format(summary.totalAmount / summary.count)
+                  }).format(summary.averageAmount)
                 : "—"}
             </div>
           </CardContent>
@@ -122,22 +114,20 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
           <CardTitle className="text-base">Répartition par raison</CardTitle>
         </CardHeader>
         <CardContent>
-          {byReason.length === 0 ? (
+          {reasonBreakdown.length === 0 ? (
             <p className="text-center text-zinc-500 py-4">
               Aucun devis perdu sur cette période
             </p>
           ) : (
             <div className="space-y-4">
-              {byReason.map((item) => (
+              {reasonBreakdown.map((item) => (
                 <div key={item.reason} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div
                         className={`w-3 h-3 rounded-full ${reasonColors[item.reason] ?? "bg-gray-400"}`}
                       />
-                      <span className="font-medium">
-                        {reasonLabels[item.reason] ?? item.reason}
-                      </span>
+                      <span className="font-medium">{item.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant="secondary">{item.count}</Badge>
@@ -145,7 +135,7 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
                         {new Intl.NumberFormat("fr-CA", {
                           style: "currency",
                           currency: "CAD",
-                        }).format(item.amount)}
+                        }).format(item.totalAmount)}
                       </span>
                     </div>
                   </div>
@@ -154,7 +144,7 @@ export function LostLeadsStats({ period = "month" }: LostLeadsStatsProps) {
                     <div
                       className={`h-full ${reasonColors[item.reason] ?? "bg-gray-400"}`}
                       style={{
-                        width: `${summary.count > 0 ? (item.count / summary.count) * 100 : 0}%`,
+                        width: `${item.percentage}%`,
                       }}
                     />
                   </div>

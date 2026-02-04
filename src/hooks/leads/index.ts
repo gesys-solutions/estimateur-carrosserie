@@ -74,6 +74,7 @@ export const leadKeys = {
   all: ["leads"] as const,
   lists: () => [...leadKeys.all, "list"] as const,
   list: (params: LeadsParams) => [...leadKeys.lists(), params] as const,
+  count: () => [...leadKeys.all, "count"] as const,
 };
 
 // API function
@@ -94,11 +95,29 @@ async function fetchLeads(params: LeadsParams = {}): Promise<LeadsResponse> {
   return response.json();
 }
 
-// Hook
+// Hooks
 export function useLeads(params: LeadsParams = {}) {
   return useQuery({
     queryKey: leadKeys.list(params),
     queryFn: () => fetchLeads(params),
     staleTime: 30_000, // 30 seconds
   });
+}
+
+/**
+ * Hook to get leads count for badge display
+ */
+export function useLeadsCount() {
+  const { data } = useQuery({
+    queryKey: leadKeys.count(),
+    queryFn: () => fetchLeads({ limit: 1 }), // Only fetch count, minimal data
+    staleTime: 60_000, // 1 minute
+    refetchInterval: 120_000, // Refetch every 2 minutes
+  });
+
+  return {
+    total: data?.count ?? 0,
+    needsFollowUp: data?.needsFollowUpCount ?? 0,
+    byStatus: data?.byStatus ?? { brouillon: 0, envoye: 0, enNegociation: 0 },
+  };
 }

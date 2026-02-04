@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { AddRelanceDialog } from "./add-relance-dialog";
-import { useDevisRelances, type RelanceItem } from "@/hooks/relances";
+import { useDevisRelances, type RelanceItem } from "@/hooks";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import type { RelanceTypeType } from "@/lib/validations/relance";
 import { RelanceTypeLabels } from "@/lib/validations/relance";
