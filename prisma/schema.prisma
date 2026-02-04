@@ -40,8 +40,9 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  devis    Devis[]
-  relances Relance[]
+  devis            Devis[]
+  relances         Relance[]
+  negotiationNotes NegotiationNote[]
 
   @@index([tenantId])
   @@index([email])
@@ -172,7 +173,9 @@ model Assurance {
   contactName  String?
   contactEmail String?
   contactPhone String?
+  address      String?
   notes        String?  
+  isActive     Boolean  @default(true)
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
@@ -186,21 +189,41 @@ model Assurance {
 }
 
 model Reclamation {
-  id          String             @id @default(uuid())
-  devisId     String             @unique
-  devis       Devis              @relation(fields: [devisId], references: [id], onDelete: Cascade)
-  assuranceId String
-  assurance   Assurance          @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
-  claimNumber String?
-  agreedPrice Decimal?           
-  status      ReclamationStatus  @default(SOUMISE)
-  notes       String?            
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id            String             @id @default(uuid())
+  devisId       String             @unique
+  devis         Devis              @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  assuranceId   String
+  assurance     Assurance          @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
+  claimNumber   String?
+  adjusterName  String?
+  adjusterPhone String?
+  adjusterEmail String?
+  agreedPrice   Decimal?           
+  agreedAt      DateTime?
+  status        ReclamationStatus  @default(SOUMISE)
+  notes         String?            
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  negotiationNotes NegotiationNote[]
 
   @@index([assuranceId])
   @@index([status])
   @@map("reclamations")
+}
+
+model NegotiationNote {
+  id            String      @id @default(uuid())
+  reclamationId String
+  reclamation   Reclamation @relation(fields: [reclamationId], references: [id], onDelete: Cascade)
+  content       String
+  createdById   String
+  createdBy     User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime    @default(now())
+
+  @@index([reclamationId])
+  @@index([createdById])
+  @@map("negotiation_notes")
 }
 
 enum ReclamationStatus {
@@ -209,6 +232,7 @@ enum ReclamationStatus {
   APPROUVEE
   REFUSEE
   NEGOCIATION
+  PAYEE
 }
 
 // ===== RELANCES =====
