@@ -50,7 +50,6 @@ interface VehicleListProps {
 
 export const VehicleList = memo(function VehicleList({
   vehicles,
-  clientId,
   onAdd,
   onEdit,
   onDelete,

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scripts directory (Node.js scripts using require())
+    "scripts/**",
   ]),
 ]);
 
