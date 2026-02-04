@@ -358,10 +358,10 @@ export function DevisInsuranceSection({
                       priceDiff?.isGain ? "text-green-600" : "text-red-600"
                     }`}
                   >
-                    {priceDiff?.difference! > 0 ? "+" : ""}
-                    {formatPrice(priceDiff?.difference || 0)}
+                    {(priceDiff?.difference ?? 0) > 0 ? "+" : ""}
+                    {formatPrice(priceDiff?.difference ?? 0)}
                     <span className="text-sm ml-1">
-                      ({priceDiff?.percentage}%)
+                      ({priceDiff?.percentage ?? 0}%)
                     </span>
                   </p>
                 </div>
