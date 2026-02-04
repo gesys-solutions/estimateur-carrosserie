@@ -117,7 +117,11 @@ model Devis {
   totalTPS     Decimal     @default(0) 
   totalTVQ     Decimal     @default(0) 
   totalTTC     Decimal     @default(0) 
-  notes        String?     
+  notes        String?
+  // Champs de perte (Epic 7)
+  lostReason   LostReason?
+  lostAt       DateTime?
+  lostNotes    String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -163,6 +167,14 @@ enum DevisItemType {
   MAIN_OEUVRE
   PEINTURE
   AUTRE
+}
+
+enum LostReason {
+  PRICE         // Trop cher
+  DELAY         // Délais trop longs
+  COMPETITOR    // Concurrent choisi
+  NO_RESPONSE   // Pas de réponse du client
+  OTHER         // Autre raison
 }
 
 // ===== ASSURANCES =====
@@ -244,6 +256,8 @@ model Relance {
   type         RelanceType
   notes        String      
   outcome      String?
+  scheduledAt  DateTime?   // Date planifiée de relance
+  completedAt  DateTime?   // Date de complétion
   nextFollowUp DateTime?
   createdById  String
   createdBy    User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -252,6 +266,7 @@ model Relance {
   @@index([devisId])
   @@index([createdById])
   @@index([nextFollowUp])
+  @@index([scheduledAt])
   @@map("relances")
 }
 

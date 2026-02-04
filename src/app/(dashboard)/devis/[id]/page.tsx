@@ -22,6 +22,7 @@ import { AlertDialog,
 } from "@/components/ui/alert-dialog";
 import { DevisStatusBadge, DevisStatusDropdown, DevisItemEditor, DevisTotals } from "@/components/devis";
 import { DevisInsuranceSection } from "@/components/assurances";
+import { RelanceHistorySection } from "@/components/relances";
 import { formatDate, formatDateTime, formatPhone } from "@/lib/utils";
 import { useDevis, useDeleteDevis } from "@/hooks/devis";
 import { toast } from "sonner";
@@ -286,43 +287,11 @@ export default function DevisDetailPage({ params }: PageProps) {
         devisTotalTTC={devis.totals.total}
       />
 
-      {/* Recent Follow-ups */}
-      {devis.relances.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-zinc-500" />
-              <CardTitle className="text-lg">Dernières relances</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {devis.relances.slice(0, 5).map((relance) => (
-                <div
-                  key={relance.id}
-                  className="border-l-2 border-zinc-200 pl-4 py-1"
-                >
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">{relance.type}</span>
-                    <span className="text-zinc-500">par {relance.createdBy}</span>
-                    <span className="text-zinc-400">
-                      {formatDate(relance.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-                    {relance.notes}
-                  </p>
-                  {relance.outcome && (
-                    <p className="text-sm text-green-600 mt-1">
-                      Résultat: {relance.outcome}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Relances History Section */}
+      <RelanceHistorySection
+        devisId={id}
+        devisNumber={devis.devisNumber}
+      />
     </div>
   );
 }

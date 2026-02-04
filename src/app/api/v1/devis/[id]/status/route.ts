@@ -6,9 +6,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withTenant } from "@/lib/tenant";
-import { statusChangeSchema, isValidTransition, DevisStatusType } from "@/lib/validations/devis";
+import { statusChangeSchema, isValidTransition, DevisStatusType, ValidStatusTransitions } from "@/lib/validations/devis";
+import { z } from "zod";
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+// Extended schema for status change with lost reason
+const extendedStatusChangeSchema = statusChangeSchema.extend({
+  lostReason: z.enum(["PRICE", "DELAY", "COMPETITOR", "NO_RESPONSE", "OTHER"]).optional(),
+  lostNotes: z.string().max(2000).optional(),
+});
 
 export async function POST(
   request: NextRequest,
@@ -21,7 +28,7 @@ export async function POST(
     const body = await request.json();
     
     // Validate input
-    const validation = statusChangeSchema.safeParse(body);
+    const validation = extendedStatusChangeSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Données invalides", details: validation.error.flatten() },
@@ -29,7 +36,7 @@ export async function POST(
       );
     }
 
-    const { status: newStatus, notes } = validation.data;
+    const { status: newStatus, notes, lostReason, lostNotes } = validation.data;
 
     // Verify devis exists
     const devis = await prisma.devis.findFirst({
@@ -51,8 +58,14 @@ export async function POST(
 
     const currentStatus = devis.status as DevisStatusType;
 
+    // Special handling for marking as lost (REFUSE)
+    // Allow transition from BROUILLON, ENVOYE, EN_NEGOCIATION
+    const canMarkAsLost = 
+      newStatus === 'REFUSE' && 
+      ['BROUILLON', 'ENVOYE', 'EN_NEGOCIATION'].includes(currentStatus);
+
     // Check if transition is valid
-    if (!isValidTransition(currentStatus, newStatus)) {
+    if (!isValidTransition(currentStatus, newStatus) && !canMarkAsLost) {
       return NextResponse.json(
         { error: `Transition de ${currentStatus} vers ${newStatus} non autorisée` },
         { status: 400 }
@@ -67,12 +80,22 @@ export async function POST(
       );
     }
 
+    // Build update data
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
+    };
+
+    // Add lost reason data if marking as lost
+    if (newStatus === 'REFUSE' && lostReason) {
+      updateData.lostReason = lostReason;
+      updateData.lostAt = new Date();
+      updateData.lostNotes = lostNotes || null;
+    }
+
     // Update status
     const updatedDevis = await prisma.devis.update({
       where: { id },
-      data: {
-        status: newStatus,
-      },
+      data: updateData,
       include: {
         client: {
           select: {
@@ -116,6 +139,8 @@ export async function POST(
           from: currentStatus,
           to: newStatus,
           notes: notes || null,
+          lostReason: lostReason || null,
+          lostNotes: lostNotes || null,
         }),
       },
     });
@@ -145,6 +170,9 @@ export async function POST(
         totalTTC: Number(updatedDevis.totalTTC),
         itemCount: updatedDevis._count.items,
         notes: updatedDevis.notes,
+        lostReason: updatedDevis.lostReason,
+        lostAt: updatedDevis.lostAt?.toISOString() ?? null,
+        lostNotes: updatedDevis.lostNotes,
         createdAt: updatedDevis.createdAt.toISOString(),
         updatedAt: updatedDevis.updatedAt.toISOString(),
       },

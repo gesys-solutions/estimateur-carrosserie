@@ -10,9 +10,12 @@ import {
   BarChart3,
   Settings,
   X,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useLeadsCount } from "@/hooks/relances";
 
 import type { Route } from "next";
 
@@ -25,13 +28,28 @@ interface NavItem {
   name: string;
   href: Route;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: () => number | null;
+}
+
+function LeadsBadge() {
+  const { needsFollowUp } = useLeadsCount();
+  if (needsFollowUp === 0) return null;
+  return (
+    <Badge 
+      variant="destructive" 
+      className="ml-auto text-xs h-5 min-w-5 flex items-center justify-center px-1.5"
+    >
+      {needsFollowUp > 99 ? "99+" : needsFollowUp}
+    </Badge>
+  );
 }
 
 const navigation: NavItem[] = [
   { name: "Tableau de bord", href: "/" as Route, icon: LayoutDashboard },
   { name: "Clients", href: "/clients" as Route, icon: Users },
-  { name: "Devis", href: "/estimates" as Route, icon: FileText },
-  { name: "Assureurs", href: "/insurers" as Route, icon: Building2 },
+  { name: "Devis", href: "/devis" as Route, icon: FileText },
+  { name: "Relances", href: "/relances" as Route, icon: Bell },
+  { name: "Assurances", href: "/assurances" as Route, icon: Building2 },
   { name: "Rapports", href: "/reports" as Route, icon: BarChart3 },
   { name: "Paramètres", href: "/settings" as Route, icon: Settings },
 ];
@@ -68,7 +86,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
             {navigation.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = 
+                pathname === item.href || 
+                (item.href !== "/" && pathname.startsWith(item.href));
+              const isRelances = item.href === "/relances";
+              
               return (
                 <Link
                   key={item.name}
@@ -83,6 +105,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.name}
+                  {isRelances && !isActive && <LeadsBadge />}
                 </Link>
               );
             })}
