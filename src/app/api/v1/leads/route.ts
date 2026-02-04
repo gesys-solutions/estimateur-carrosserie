@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
     const parsed = toFollowUpQuerySchema.safeParse({
       daysThreshold: queryParams.daysThreshold ? Number(queryParams.daysThreshold) : undefined,
-      estimateurId: queryParams.estimateurId,
-      status: queryParams.status,
+      estimateurId: queryParams.estimateurId || undefined,
+      status: queryParams.status || undefined,
       page: queryParams.page ? Number(queryParams.page) : 1,
       limit: queryParams.limit ? Number(queryParams.limit) : 50,
     });
