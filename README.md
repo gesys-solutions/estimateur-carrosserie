@@ -1,130 +1,111 @@
-# Estimateur Carrosserie
+# EstimPro 🚗
 
-Outil de gestion pour estimateurs en carrosserie automobile — devis, suivi clients, négociations assurances, tableau de bord ventes/production.
+Outil de gestion pour estimateurs en carrosserie automobile.
 
-## 🚀 Stack Technique
+## Fonctionnalités
 
-- **Frontend:** Next.js 16 + React 19 + Tailwind CSS v4
-- **UI Components:** shadcn/ui
-- **Base de données:** PostgreSQL (via Prisma ORM)
-- **Authentification:** NextAuth.js v5
-- **Validation:** Zod
-- **Déploiement:** Docker → Azure Container Apps
+### v1.0.0 (MVP)
+- 🔐 **Authentification** — Login sécurisé avec rôles (Admin, Estimateur)
+- 👥 **Gestion Clients** — CRUD clients avec multi-véhicules
+- 📝 **Devis** — Création, items, calcul taxes TPS/TVQ, export PDF
+- 🏢 **Assurances** — Répertoire compagnies, réclamations, négociations
+- 📊 **Dashboard** — KPIs, tendances CA, production en cours
+- 📞 **Relances** — Suivi leads, notes de relance, raisons de perte
 
-## 📋 Fonctionnalités
+## Stack Technique
 
-- ✅ **Gestion clients** — CRUD complet, véhicules associés
-- ✅ **Création de devis** — Items, calcul TPS/TVQ automatique
-- ✅ **Suivi assurances** — Compagnies, réclamations, prix convenus
-- ✅ **Dashboard** — KPIs, ventes/production, graphiques
-- ✅ **Relances** — Suivi des devis non convertis
-- ✅ **Multi-tenant** — Isolation par entreprise
-- ✅ **Rôles** — Admin, Manager, Estimateur
+- **Frontend:** Next.js 16 + React 19 + Tailwind CSS 4
+- **Backend:** API Routes Next.js + Prisma 6
+- **Base de données:** SQLite (dev) / PostgreSQL (prod)
+- **Auth:** NextAuth.js v5
+- **Charts:** Recharts
 
-## 🛠️ Installation
-
-### Prérequis
-
-- Node.js 22+
-- Docker & Docker Compose (pour la BDD)
-- npm ou yarn
-
-### Setup local
+## Démarrage rapide
 
 ```bash
-# Cloner le repo
-git clone https://github.com/gesys-solutions/estimateur-carrosserie.git
-cd estimateur-carrosserie
-
-# Installer les dépendances
+# Installation
 npm install
 
-# Copier les variables d'environnement
-cp .env.example .env
+# Configuration
+cp .env.example .env.local
+# Éditer .env.local avec vos valeurs
 
-# Démarrer PostgreSQL
-docker-compose up -d db
+# Base de données
+npx prisma generate
+npx prisma db push
 
-# Appliquer les migrations
-npx prisma migrate dev
+# Seed (optionnel)
+npx prisma db seed
 
-# Démarrer le serveur de développement
+# Développement
 npm run dev
 ```
 
-L'application sera disponible sur http://localhost:3000
+## Variables d'environnement
 
-### Docker (production)
-
-```bash
-# Build et démarrage complets
-docker-compose --profile full up --build
+```env
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
 ```
 
-## 📁 Structure du Projet
+## Déploiement Azure
+
+### Container Apps
+
+```bash
+# Build Docker
+docker build -t estimpro:latest .
+
+# Push vers ACR
+az acr login --name <registry>
+docker tag estimpro:latest <registry>.azurecr.io/estimpro:v1.0.0
+docker push <registry>.azurecr.io/estimpro:v1.0.0
+
+# Déployer
+az containerapp create \
+  --name estimpro \
+  --resource-group <rg> \
+  --environment <env> \
+  --image <registry>.azurecr.io/estimpro:v1.0.0 \
+  --target-port 3000 \
+  --env-vars DATABASE_URL=secretref:db-url NEXTAUTH_SECRET=secretref:auth-secret
+```
+
+## Structure du projet
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/            # Pages d'authentification
-│   │   └── login/
+├── app/                    # App Router Next.js
+│   ├── (auth)/            # Pages auth (login)
 │   ├── (dashboard)/       # Pages protégées
-│   │   ├── dashboard/
-│   │   ├── clients/
-│   │   ├── devis/
-│   │   ├── assurances/
-│   │   └── relances/
-│   └── api/               # API Routes
-├── components/
-│   ├── ui/                # shadcn/ui components
-│   ├── layout/            # Layout components
-│   ├── clients/           # Client-specific components
-│   ├── devis/             # Devis-specific components
-│   └── dashboard/         # Dashboard components
-├── hooks/                 # Custom React hooks
-├── lib/
-│   ├── db/               # Prisma client
-│   ├── auth/             # Auth utilities
-│   └── validations/      # Zod schemas
-└── types/                # TypeScript types
+│   └── api/v1/            # API Routes
+├── components/            # Composants React
+│   ├── ui/               # shadcn/ui
+│   ├── clients/          # Composants clients
+│   ├── devis/            # Composants devis
+│   ├── dashboard/        # Composants dashboard
+│   └── relances/         # Composants relances
+├── hooks/                 # React Query hooks
+├── lib/                   # Utilitaires
+│   ├── auth.ts           # NextAuth config
+│   ├── prisma.ts         # Client Prisma
+│   └── validations/      # Schemas Zod
+└── middleware.ts          # Auth middleware
 ```
 
-## 🗃️ Base de Données
+## API Endpoints
 
-Le schéma Prisma définit les entités suivantes :
-- **Tenant** — Multi-tenant support
-- **User** — Utilisateurs avec rôles
-- **Client** — Clients avec véhicules
-- **Vehicle** — Véhicules des clients
-- **Devis** — Devis avec items
-- **DevisItem** — Lignes de devis
-- **Assurance** — Compagnies d'assurance
-- **Reclamation** — Réclamations assurance
-- **Relance** — Suivi des relances
+| Endpoint | Description |
+|----------|-------------|
+| `GET/POST /api/v1/clients` | Liste/Création clients |
+| `GET/PATCH/DELETE /api/v1/clients/[id]` | CRUD client |
+| `GET/POST /api/v1/devis` | Liste/Création devis |
+| `GET/PATCH/DELETE /api/v1/devis/[id]` | CRUD devis |
+| `POST /api/v1/devis/[id]/items` | Ajouter item |
+| `GET /api/v1/dashboard/stats` | Stats globales |
+| `GET /api/v1/relances` | Leads à relancer |
 
-## 🔐 Authentification
+## Licence
 
-- NextAuth.js v5 avec credentials provider
-- Rôles: ADMIN, MANAGER, ESTIMATEUR
-- Sessions JWT
-
-## 📊 Taxes Québec
-
-- TPS: 5%
-- TVQ: 9.975%
-- Calcul automatique dans les devis
-
-## 🚢 Déploiement
-
-### Azure Container Apps
-
-1. Build l'image Docker
-2. Push vers Azure Container Registry
-3. Déployer sur Azure Container Apps
-4. Configurer les variables d'environnement
-
-Voir `docs/DEPLOYMENT.md` pour les détails.
-
-## 📝 Licence
-
-Propriétaire — © 2026 Gesys Solutions. Tous droits réservés.
+Propriétaire — Gesys Solutions © 2026
