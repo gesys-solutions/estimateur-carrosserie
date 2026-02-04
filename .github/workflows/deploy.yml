@@ -1,0 +1,128 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  AZURE_ACR_NAME: acrgesys
+  IMAGE_NAME: estimpro
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment variables
+        run: |
+          if [ "${{ github.event.inputs.environment || 'dev' }}" == "prod" ]; then
+            echo "CONTAINER_APP_ENV=cae-gesys-prod" >> $GITHUB_ENV
+            echo "CONTAINER_APP_NAME=estimpro-prod" >> $GITHUB_ENV
+            echo "RESOURCE_GROUP=rg-gesys-apps" >> $GITHUB_ENV
+          else
+            echo "CONTAINER_APP_ENV=cae-gesys-dev" >> $GITHUB_ENV
+            echo "CONTAINER_APP_NAME=estimpro-dev" >> $GITHUB_ENV
+            echo "RESOURCE_GROUP=rg-gesys-apps" >> $GITHUB_ENV
+          fi
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ env.AZURE_ACR_NAME }}
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE_LATEST=${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_LATEST
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Container Apps
+        run: |
+          # Check if app exists
+          APP_EXISTS=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "name" -o tsv 2>/dev/null || echo "")
+          
+          if [ -z "$APP_EXISTS" ]; then
+            echo "Creating new Container App..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_APP_ENV }} \
+              --image ${{ env.IMAGE_TAG }} \
+              --registry-server ${{ env.AZURE_ACR_NAME }}.azurecr.io \
+              --registry-identity system \
+              --target-port 3000 \
+              --ingress external \
+              --min-replicas 0 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --env-vars \
+                DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+                AUTH_SECRET="${{ secrets.AUTH_SECRET }}" \
+                AUTH_TRUST_HOST="true" \
+                NODE_ENV="production"
+          else
+            echo "Updating existing Container App..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.IMAGE_TAG }}
+          fi
+
+      - name: Run database migrations
+        run: |
+          # Get the app URL
+          APP_URL=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          
+          echo "✅ Deployed to: https://$APP_URL"
+          echo "📦 Image: ${{ env.IMAGE_TAG }}"
+          
+          # Note: Prisma migrations run automatically on container startup via the Dockerfile
+
+      - name: Output deployment info
+        run: |
+          APP_URL=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          
+          echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ github.event.inputs.environment || 'dev' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://$APP_URL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | ${{ env.IMAGE_TAG }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY

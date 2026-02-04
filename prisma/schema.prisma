@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -105,7 +105,7 @@ model Vehicle {
 
 model Devis {
   id           String      @id @default(uuid())
-  devisNumber  String      @unique @default(uuid()) // Human-readable, generated
+  devisNumber  String      @unique @default(uuid())
   clientId     String
   client       Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
   vehicleId    String
@@ -113,12 +113,11 @@ model Devis {
   estimateurId String
   estimateur   User        @relation(fields: [estimateurId], references: [id], onDelete: Restrict)
   status       DevisStatus @default(BROUILLON)
-  totalHT      Decimal     @default(0) 
-  totalTPS     Decimal     @default(0) 
-  totalTVQ     Decimal     @default(0) 
-  totalTTC     Decimal     @default(0) 
+  totalHT      Decimal     @default(0) @db.Decimal(10, 2)
+  totalTPS     Decimal     @default(0) @db.Decimal(10, 2)
+  totalTVQ     Decimal     @default(0) @db.Decimal(10, 2)
+  totalTTC     Decimal     @default(0) @db.Decimal(10, 2)
   notes        String?
-  // Champs de perte (Epic 7)
   lostReason   LostReason?
   lostAt       DateTime?
   lostNotes    String?
@@ -152,9 +151,9 @@ model DevisItem {
   devis       Devis         @relation(fields: [devisId], references: [id], onDelete: Cascade)
   description String
   type        DevisItemType
-  quantity    Decimal       
-  unitPrice   Decimal       
-  total       Decimal       
+  quantity    Decimal       @db.Decimal(10, 2)
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  total       Decimal       @db.Decimal(10, 2)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -170,11 +169,11 @@ enum DevisItemType {
 }
 
 enum LostReason {
-  PRICE         // Trop cher
-  DELAY         // Délais trop longs
-  COMPETITOR    // Concurrent choisi
-  NO_RESPONSE   // Pas de réponse du client
-  OTHER         // Autre raison
+  PRICE
+  DELAY
+  COMPETITOR
+  NO_RESPONSE
+  OTHER
 }
 
 // ===== ASSURANCES =====
@@ -186,7 +185,7 @@ model Assurance {
   contactEmail String?
   contactPhone String?
   address      String?
-  notes        String?  
+  notes        String?
   isActive     Boolean  @default(true)
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -201,21 +200,21 @@ model Assurance {
 }
 
 model Reclamation {
-  id            String             @id @default(uuid())
-  devisId       String             @unique
-  devis         Devis              @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  id            String            @id @default(uuid())
+  devisId       String            @unique
+  devis         Devis             @relation(fields: [devisId], references: [id], onDelete: Cascade)
   assuranceId   String
-  assurance     Assurance          @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
+  assurance     Assurance         @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
   claimNumber   String?
   adjusterName  String?
   adjusterPhone String?
   adjusterEmail String?
-  agreedPrice   Decimal?           
+  agreedPrice   Decimal?          @db.Decimal(10, 2)
   agreedAt      DateTime?
-  status        ReclamationStatus  @default(SOUMISE)
-  notes         String?            
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  status        ReclamationStatus @default(SOUMISE)
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   negotiationNotes NegotiationNote[]
 
@@ -254,10 +253,10 @@ model Relance {
   devisId      String
   devis        Devis       @relation(fields: [devisId], references: [id], onDelete: Cascade)
   type         RelanceType
-  notes        String      
+  notes        String
   outcome      String?
-  scheduledAt  DateTime?   // Date planifiée de relance
-  completedAt  DateTime?   // Date de complétion
+  scheduledAt  DateTime?
+  completedAt  DateTime?
   nextFollowUp DateTime?
   createdById  String
   createdBy    User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -286,7 +285,7 @@ model AuditLog {
   action     String
   entityType String
   entityId   String
-  details    String?  
+  details    String?
   createdAt  DateTime @default(now())
 
   @@index([tenantId])
