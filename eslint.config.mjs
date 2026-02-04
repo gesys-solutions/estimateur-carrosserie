@@ -12,23 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Additional ignores:
-    "prisma/migrations/**",
-    "node_modules/**",
   ]),
-  // Project-specific rules
-  {
-    rules: {
-      // Allow unused variables starting with _
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
-      ],
-    },
-  },
 ]);
 
 export default eslintConfig;

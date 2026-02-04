@@ -1,51 +1,32 @@
-# EstimPro Dockerfile
-# Multi-stage build for Next.js 16 with standalone output
-
-# ============================================
 # Stage 1: Dependencies
-# ============================================
 FROM node:22-alpine AS deps
-
-RUN apk add --no-cache libc6-compat
-
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
-COPY prisma ./prisma/
+# Install dependencies for Prisma
+RUN apk add --no-cache libc6-compat
 
-# Install dependencies
+COPY package.json package-lock.json* ./
 RUN npm ci
+
+# Stage 2: Builder
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# ============================================
-# Stage 2: Builder
-# ============================================
-FROM node:22-alpine AS builder
-
-WORKDIR /app
-
-# Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Set production environment
-ENV NODE_ENV=production
+# Build Next.js app
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build the application
+ENV NODE_ENV=production
 RUN npm run build
 
-# ============================================
-# Stage 3: Runner (Production)
-# ============================================
+# Stage 3: Runner
 FROM node:22-alpine AS runner
-
 WORKDIR /app
 
-# Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -53,32 +34,22 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder
+# Copy built assets
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy Prisma client from deps
-COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
-
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
-
-# Switch to non-root user
 USER nextjs
 
-# Expose port
 EXPOSE 3000
 
-# Set port and hostname
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
-
-# Start the server
+# Start the application
 CMD ["node", "server.js"]

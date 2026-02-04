@@ -1,62 +1,43 @@
-# EstimPro Docker Compose
-# Development environment configuration
+# Docker Compose for local development
+# Provides PostgreSQL database for the application
 
 services:
-  # Next.js application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=file:/app/prisma/dev.db
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-dev-secret-not-for-production}
-      - NEXTAUTH_URL=http://localhost:3000
-    volumes:
-      # Persist SQLite database
-      - sqlite_data:/app/prisma
-    depends_on:
-      - postgres
-    networks:
-      - estimpro-network
-
-  # PostgreSQL database (optional, for production-like testing)
-  postgres:
+  # PostgreSQL Database
+  db:
     image: postgres:16-alpine
+    container_name: estimateur-db
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: estimateur
+      POSTGRES_PASSWORD: estimateur_password
+      POSTGRES_DB: estimateur_db
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=estimpro
-      - POSTGRES_PASSWORD=dev_password_change_in_prod
-      - POSTGRES_DB=estimpro
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - estimpro-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U estimpro"]
+      test: ["CMD-SHELL", "pg_isready -U estimateur -d estimateur_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Adminer for database management (dev only)
-  adminer:
-    image: adminer:latest
+  # Application (for production-like testing)
+  app:
+    build: .
+    container_name: estimateur-app
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://estimateur:estimateur_password@db:5432/estimateur_db?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      NODE_ENV: production
     depends_on:
-      - postgres
-    networks:
-      - estimpro-network
+      db:
+        condition: service_healthy
+    profiles:
+      - full  # Only start with `docker-compose --profile full up`
 
 volumes:
-  sqlite_data:
   postgres_data:
-
-networks:
-  estimpro-network:
-    driver: bridge

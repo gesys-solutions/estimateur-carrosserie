@@ -1,279 +1,235 @@
-// EstimPro Database Schema
-// Multi-tenant SaaS for auto body shops
-// Provider: SQLite (dev) / PostgreSQL (prod)
+// Prisma Schema pour Estimateur Carrosserie
+// Stack: PostgreSQL with multi-tenant support
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
-// ============================================
-// MULTI-TENANT
-// ============================================
+// ===== TENANTS & AUTH =====
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String   // Nom de l'atelier
-  slug      String   @unique // URL-friendly identifier
-  address   String?
-  phone     String?
-  email     String?
-  logoUrl   String?
-  taxConfig String   @default("{}") // JSON: {"tps": 5, "tvq": 9.975}
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  clients   Client[]
-  estimates Estimate[]
-  insurers  Insurer[]
-  auditLogs AuditLog[]
+  users      User[]
+  clients    Client[]
+  assurances Assurance[]
 
-  @@index([slug])
+  @@map("tenants")
 }
-
-// ============================================
-// AUTH & USERS
-// ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  tenantId      String
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  email         String
-  passwordHash  String
-  firstName     String
-  lastName      String
-  role          String    @default("ESTIMATOR") // ADMIN, MANAGER, ESTIMATOR
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(ESTIMATEUR)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  estimates     Estimate[]
-  negotiations  Negotiation[]
-  auditLogs     AuditLog[]
+  devis    Devis[]
+  relances Relance[]
 
-  @@unique([tenantId, email])
   @@index([tenantId])
   @@index([email])
+  @@map("users")
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
+enum Role {
+  ADMIN
+  MANAGER
+  ESTIMATEUR
 }
 
-// ============================================
-// CLIENTS & VEHICLES
-// ============================================
+// ===== CLIENTS & VEHICLES =====
 
 model Client {
-  id         String   @id @default(cuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
   firstName  String
   lastName   String
-  phone      String?
   email      String?
+  phone      String
   address    String?
   city       String?
   postalCode String?
-  notes      String?
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  vehicles  Vehicle[]
-  estimates Estimate[]
+  vehicles Vehicle[]
+  devis    Devis[]
 
   @@index([tenantId])
-  @@index([tenantId, lastName])
-  @@index([tenantId, phone])
+  @@index([lastName, firstName])
+  @@index([phone])
+  @@map("clients")
 }
 
 model Vehicle {
-  id        String   @id @default(cuid())
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  make      String   // Marque
-  model     String   // Modèle
-  year      Int
-  vin       String?  // VIN
-  plate     String?  // Immatriculation
-  color     String?
-  mileage   Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  estimates Estimate[]
-
-  @@index([clientId])
-  @@index([plate])
-  @@index([vin])
-}
-
-// ============================================
-// ESTIMATES & LINE ITEMS
-// ============================================
-
-model Estimate {
-  id           String   @id @default(cuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  number       String   // Numéro de devis (séquentiel par tenant)
+  id           String   @id @default(uuid())
   clientId     String
-  client       Client   @relation(fields: [clientId], references: [id])
-  vehicleId    String
-  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
-  createdById  String
-  createdBy    User     @relation(fields: [createdById], references: [id])
-  status       String   @default("DRAFT") // DRAFT, SUBMITTED, NEGOTIATION, APPROVED, SIGNED, IN_REPAIR, READY, DELIVERED, CLOSED, LOST
-  damageType   String?  // Type de dommage (collision, vandalisme, etc.)
-  description  String?  // Description des dommages
-  subtotal     Float    @default(0)
-  taxTps       Float    @default(0)
-  taxTvq       Float    @default(0)
-  total        Float    @default(0)
-  agreedPrice  Float?   // Prix convenu (locked)
-  agreedAt     DateTime? // Date accord prix
-  isLocked     Boolean  @default(false) // Verrouillé après approved
-  timeSpentMin Int      @default(0) // Temps passé en minutes
-  lossReason   String?  // Raison de perte si LOST
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  make         String
+  model        String
+  year         Int
+  vin          String?
+  licensePlate String?
+  color        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  lineItems    LineItem[]
-  claim        Claim?
-  negotiations Negotiation[]
-  signatures   Signature[]
+  devis Devis[]
 
-  @@unique([tenantId, number])
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, createdById])
   @@index([clientId])
-  @@index([vehicleId])
-  @@index([createdAt])
+  @@index([licensePlate])
+  @@index([vin])
+  @@map("vehicles")
 }
 
-model LineItem {
-  id          String   @id @default(cuid())
-  estimateId  String
-  estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  type        String   // LABOR, PART, PAINT, MISC
+// ===== DEVIS =====
+
+model Devis {
+  id           String      @id @default(uuid())
+  devisNumber  String      @unique @default(uuid()) // Human-readable, generated
+  clientId     String
+  client       Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  vehicleId    String
+  vehicle      Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  estimateurId String
+  estimateur   User        @relation(fields: [estimateurId], references: [id], onDelete: Restrict)
+  status       DevisStatus @default(BROUILLON)
+  totalHT      Decimal     @default(0) @db.Decimal(10, 2)
+  totalTPS     Decimal     @default(0) @db.Decimal(10, 2)
+  totalTVQ     Decimal     @default(0) @db.Decimal(10, 2)
+  totalTTC     Decimal     @default(0) @db.Decimal(10, 2)
+  notes        String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items       DevisItem[]
+  reclamation Reclamation?
+  relances    Relance[]
+
+  @@index([clientId])
+  @@index([estimateurId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("devis")
+}
+
+enum DevisStatus {
+  BROUILLON
+  ENVOYE
+  EN_NEGOCIATION
+  ACCEPTE
+  REFUSE
+  EN_REPARATION
+  TERMINE
+}
+
+model DevisItem {
+  id          String        @id @default(uuid())
+  devisId     String
+  devis       Devis         @relation(fields: [devisId], references: [id], onDelete: Cascade)
   description String
-  quantity    Float
-  unitPrice   Float
-  subtotal    Float    // quantity * unitPrice
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  type        DevisItemType
+  quantity    Decimal       @db.Decimal(10, 2)
+  unitPrice   Decimal       @db.Decimal(10, 2)
+  total       Decimal       @db.Decimal(10, 2)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  @@index([estimateId])
+  @@index([devisId])
+  @@map("devis_items")
 }
 
-// ============================================
-// INSURANCE & CLAIMS
-// ============================================
-
-model Insurer {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  code      String?  // Code court (ex: INT pour Intact)
-  phone     String?
-  email     String?
-  address   String?
-  notes     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  claims Claim[]
-
-  @@unique([tenantId, name])
-  @@index([tenantId])
+enum DevisItemType {
+  PIECE
+  MAIN_OEUVRE
+  PEINTURE
+  AUTRE
 }
 
-model Claim {
-  id            String   @id @default(cuid())
-  estimateId    String   @unique
-  estimate      Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  insurerId     String
-  insurer       Insurer  @relation(fields: [insurerId], references: [id])
-  claimNumber   String   // Numéro de réclamation
-  adjusterName  String?  // Nom de l'expert
-  adjusterPhone String?
-  adjusterEmail String?
-  deductible    Float?   // Franchise
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// ===== ASSURANCES =====
 
-  @@index([insurerId])
-  @@index([claimNumber])
-}
+model Assurance {
+  id           String   @id @default(uuid())
+  name         String
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  notes        String?  @db.Text
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-model Negotiation {
-  id          String   @id @default(cuid())
-  estimateId  String
-  estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  notes       String   // Notes de négociation
-  amount      Float?   // Montant proposé/contre-proposé
-  createdAt   DateTime @default(now())
-
-  @@index([estimateId])
-  @@index([createdAt])
-}
-
-// ============================================
-// SIGNATURES
-// ============================================
-
-model Signature {
-  id         String   @id @default(cuid())
-  estimateId String
-  estimate   Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  type       String   // AUTHORIZATION, DELIVERY, ESTIMATE
-  signerName String   // Nom du signataire
-  imageUrl   String   // URL image signature (Blob Storage)
-  signedAt   DateTime @default(now())
-
-  @@index([estimateId])
-  @@index([type])
-}
-
-// ============================================
-// AUDIT LOG
-// ============================================
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  action     String   // CREATE, UPDATE, DELETE, LOGIN, STATUS_CHANGE, etc.
-  entityType String   // Estimate, Client, etc.
-  entityId   String?
-  details    String?  // JSON details
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+  reclamations Reclamation[]
 
   @@index([tenantId])
-  @@index([tenantId, action])
-  @@index([tenantId, entityType, entityId])
-  @@index([createdAt])
+  @@index([name])
+  @@map("assurances")
+}
+
+model Reclamation {
+  id          String             @id @default(uuid())
+  devisId     String             @unique
+  devis       Devis              @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  assuranceId String
+  assurance   Assurance          @relation(fields: [assuranceId], references: [id], onDelete: Restrict)
+  claimNumber String?
+  agreedPrice Decimal?           @db.Decimal(10, 2)
+  status      ReclamationStatus  @default(SOUMISE)
+  notes       String?            @db.Text
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([assuranceId])
+  @@index([status])
+  @@map("reclamations")
+}
+
+enum ReclamationStatus {
+  SOUMISE
+  EN_ATTENTE
+  APPROUVEE
+  REFUSEE
+  NEGOCIATION
+}
+
+// ===== RELANCES =====
+
+model Relance {
+  id           String      @id @default(uuid())
+  devisId      String
+  devis        Devis       @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  type         RelanceType
+  notes        String      @db.Text
+  outcome      String?
+  nextFollowUp DateTime?
+  createdById  String
+  createdBy    User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt    DateTime    @default(now())
+
+  @@index([devisId])
+  @@index([createdById])
+  @@index([nextFollowUp])
+  @@map("relances")
+}
+
+enum RelanceType {
+  APPEL
+  EMAIL
+  SMS
+  VISITE
 }
