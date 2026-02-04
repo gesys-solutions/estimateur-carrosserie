@@ -78,7 +78,8 @@ jobs:
               --environment ${{ env.CONTAINER_APP_ENV }} \
               --image ${{ env.IMAGE_TAG }} \
               --registry-server ${{ env.AZURE_ACR_NAME }}.azurecr.io \
-              --registry-identity system \
+              --registry-username ${{ secrets.ACR_USERNAME }} \
+              --registry-password ${{ secrets.ACR_PASSWORD }} \
               --target-port 3000 \
               --ingress external \
               --min-replicas 0 \
